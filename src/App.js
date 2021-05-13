@@ -23,27 +23,27 @@ class App extends Component {
     this.chartRef = createRef();
     this.listRef = createRef();
     this.chartWidth = 0;
+    this.lastVerticalScroll = Date.now() - 1000;
+    this.lastHorizontalScroll = Date.now() - 1000;
   }
 
   state = {
     todoArray: dummyTasks,
-    lastVerticalScroll: Date.now() - 1000,
-    lastHorizontalScroll: Date.now() - 1000,
   };
 
   onHorizontalScroll = event => {
-    if (this.state.lastVerticalScroll <= Date.now() - 1000) {
+    if (this.lastVerticalScroll <= Date.now() - 1000) {
       const positionFraction =
         event.nativeEvent.contentOffset.x / event.nativeEvent.contentSize.width;
       const absolutePosition =
         positionFraction * listItemHeight * this.state.todoArray.length;
       this.listRef.current.scrollToAsync(absolutePosition);
-      this.setState({lastHorizontalScroll: Date.now()});
+      this.lastHorizontalScroll = Date.now();
     }
   };
 
   onVerticalScroll = ({viewableItems}) => {
-    if (this.state.lastHorizontalScroll <= Date.now() - 1000) {
+    if (this.lastHorizontalScroll <= Date.now() - 1000) {
       const positionFraction =
         viewableItems[0].index / (this.state.todoArray.length - 1);
       const absolutePosition = positionFraction * this.chartWidth;
@@ -52,7 +52,7 @@ class App extends Component {
         y: 0,
         animated: true,
       });
-      this.setState({lastVerticalScroll: Date.now()});
+      this.lastVerticalScroll = Date.now();
     }
   };
 
