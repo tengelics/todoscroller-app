@@ -14,6 +14,9 @@ const listItemHeight = 50;
 const verticalBarWidth = 20;
 const verticalBarMargin = 10;
 
+console.log = console.warn = console.error = () => {};
+console.disableYellowBox = true;
+
 class App extends Component {
   constructor(props) {
     super(props);
