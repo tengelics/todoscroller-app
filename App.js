@@ -1,4 +1,4 @@
-import React, {Component, createRef} from 'react';
+import React, {Component, Fragment, createRef} from 'react';
 import {
   SafeAreaView,
   ScrollView,
@@ -8,7 +8,7 @@ import {
   TouchableOpacity,
 } from 'react-native';
 import DraggableFlatList from 'react-native-draggable-flatlist';
-import {dummyTaskHelper} from './dummyTaskHelper';
+import {dummyTaskHelper} from './dummyHelper';
 const dummyTasks = dummyTaskHelper();
 const listItemHeight = 50;
 const verticalBarWidth = 20;
@@ -19,16 +19,17 @@ class App extends Component {
     super(props);
     this.chartRef = createRef();
     this.listRef = createRef();
+    this.chartWidth = 0;
   }
 
   state = {
     todoArray: dummyTasks,
-    lastVerticalScroll: Date.now() - 500,
-    lastHorizontalScroll: Date.now() - 500,
+    lastVerticalScroll: Date.now() - 1000,
+    lastHorizontalScroll: Date.now() - 1000,
   };
 
   onHorizontalScroll = event => {
-    if (this.state.lastVerticalScroll <= Date.now() - 500) {
+    if (this.state.lastVerticalScroll <= Date.now() - 1000) {
       const positionFraction =
         event.nativeEvent.contentOffset.x / event.nativeEvent.contentSize.width;
       const absolutePosition =
@@ -39,10 +40,10 @@ class App extends Component {
   };
 
   onVerticalScroll = ({viewableItems}) => {
-    if (this.state.lastHorizontalScroll <= Date.now() - 500) {
-      const firstVisibleIndex = viewableItems[0].index;
-      const absolutePosition =
-        firstVisibleIndex * (verticalBarWidth + verticalBarMargin * 2);
+    if (this.state.lastHorizontalScroll <= Date.now() - 1000) {
+      const positionFraction =
+        viewableItems[0].index / (this.state.todoArray.length - 1);
+      const absolutePosition = positionFraction * this.chartWidth;
       this.chartRef.current.scrollTo({
         x: absolutePosition,
         y: 0,
@@ -54,7 +55,7 @@ class App extends Component {
 
   onItemReorder = newArray => {
     this.setState({
-      todos: newArray,
+      todoArray: newArray,
     });
   };
 
@@ -74,23 +75,38 @@ class App extends Component {
         horizontal={true}
         showsHorizontalScrollIndicator={false}
         ref={this.chartRef}
-        onScroll={this.onHorizontalScroll}>
-        {this.state.todoArray.map(item => {
-          return this.renderChartBar(item);
+        onScroll={this.onHorizontalScroll}
+        onContentSizeChange={width => {
+          this.chartWidth = width;
+        }}>
+        {this.state.todoArray.map((item, index) => {
+          const addWeekend = index > 0 && index % 5 === 0;
+          return this.renderChartBar(item, addWeekend);
         })}
       </ScrollView>
     </View>
   );
 
-  renderChartBar = item => (
-    <View
-      style={{
-        ...styles.chartBar,
-        height: `${item.hardness * 18}%`,
-      }}>
-      <Text>{item.taskName.slice(0, item.taskName.indexOf('.'))}</Text>
-    </View>
+  renderChartBar = (item, addWeekend) => (
+    <Fragment>
+      {addWeekend && this.renderWeekendBar()}
+      <View
+        style={{
+          ...styles.chartBar,
+          height: `${item.hardness * 18}%`,
+        }}>
+        <Text>{item.taskName.slice(0, item.taskName.indexOf('.'))}</Text>
+      </View>
+    </Fragment>
   );
+
+  renderWeekendBar = () => (
+    <Fragment>
+      <View style={{...styles.chartBar, height: 0}} />
+      <View style={{...styles.chartBar, height: 0}} />
+    </Fragment>
+  );
+
   renderList = () => (
     <DraggableFlatList
       onViewableItemsChanged={this.onVerticalScroll}
