@@ -2,16 +2,12 @@ import React, {Component, createRef} from 'react';
 import {
   SafeAreaView,
   ScrollView,
-  StatusBar,
   StyleSheet,
   Text,
   View,
-  FlatList,
   TouchableOpacity,
 } from 'react-native';
-import DraggableFlatList, {
-  RenderItemParams,
-} from 'react-native-draggable-flatlist';
+import DraggableFlatList from 'react-native-draggable-flatlist';
 import {dummyTaskHelper} from './dummyTaskHelper';
 const dummyTasks = dummyTaskHelper();
 const listItemHeight = 50;
@@ -24,29 +20,31 @@ class App extends Component {
     this.chartRef = createRef();
     this.listRef = createRef();
   }
+
   state = {
-    todos: dummyTasks,
+    todoArray: dummyTasks,
     lastVerticalScroll: Date.now() - 500,
     lastHorizontalScroll: Date.now() - 500,
   };
 
-  onHorizontalChange = event => {
+  onHorizontalScroll = event => {
     if (this.state.lastVerticalScroll <= Date.now() - 500) {
-      const position =
+      const positionFraction =
         event.nativeEvent.contentOffset.x / event.nativeEvent.contentSize.width;
-      console.log('Position: ', position);
-      this.listRef.current.scrollToAsync(
-        position * listItemHeight * this.state.todos.length,
-      );
+      const absolutePosition =
+        positionFraction * listItemHeight * this.state.todoArray.length;
+      this.listRef.current.scrollToAsync(absolutePosition);
       this.setState({lastHorizontalScroll: Date.now()});
     }
   };
 
-  onVerticalChange = ({viewableItems}) => {
+  onVerticalScroll = ({viewableItems}) => {
     if (this.state.lastHorizontalScroll <= Date.now() - 500) {
-      console.log('First visible index: ', viewableItems[0].index);
+      const firstVisibleIndex = viewableItems[0].index;
+      const absolutePosition =
+        firstVisibleIndex * (verticalBarWidth + verticalBarMargin * 2);
       this.chartRef.current.scrollTo({
-        x: viewableItems[0].index * (verticalBarWidth + verticalBarMargin * 2),
+        x: absolutePosition,
         y: 0,
         animated: true,
       });
@@ -54,85 +52,98 @@ class App extends Component {
     }
   };
 
-  reorderItems = newArray => {
+  onItemReorder = newArray => {
     this.setState({
       todos: newArray,
     });
   };
+
   render() {
-    console.log('this.state: ', this.state);
     return (
-      <SafeAreaView
-        style={{
-          flex: 1,
-        }}>
-        <View style={{flex: 0.3}}>
-          <ScrollView
-            contentContainerStyle={{
-              backgroundColor: 'lightgray',
-              flexDirection: 'row',
-              alignItems: 'flex-end',
-            }}
-            horizontal={true}
-            showsHorizontalScrollIndicator={false}
-            ref={this.chartRef}
-            onScroll={this.onHorizontalChange}>
-            {(() => {
-              return this.state.todos.map((item, index) => {
-                return (
-                  <View
-                    style={{
-                      width: verticalBarWidth,
-                      height: `${item.hardness * 18}%`,
-                      marginHorizontal: verticalBarMargin,
-                      backgroundColor: 'teal',
-                    }}>
-                    <Text>
-                      {item.taskName.slice(0, item.taskName.indexOf('.'))}
-                    </Text>
-                  </View>
-                );
-              });
-            })()}
-          </ScrollView>
+      <SafeAreaView style={styles.mainContainer}>
+        <View style={styles.chartScrollContainer}>
+          {this.renderChartScrollView()}
         </View>
-        <DraggableFlatList
-          onViewableItemsChanged={this.onVerticalChange}
-          data={this.state.todos}
-          renderItem={this.renderItem}
-          keyExtractor={(item, index) => `draggable-item-${index}`}
-          onDragEnd={({data}) => this.reorderItems(data)}
-          style={{
-            flex: 1,
-          }}
-          ref={this.listRef}
-        />
+        {this.renderFlatList()}
       </SafeAreaView>
     );
   }
-  renderItem = ({item, index, drag, isActive}) => (
-    <TouchableOpacity
+
+  renderChartScrollView = () => (
+    <ScrollView
+      contentContainerStyle={styles.chartScrollView}
+      horizontal={true}
+      showsHorizontalScrollIndicator={false}
+      ref={this.chartRef}
+      onScroll={this.onHorizontalScroll}>
+      {this.state.todoArray.map(item => {
+        return this.renderChartBar(item);
+      })}
+    </ScrollView>
+  );
+
+  renderChartBar = item => (
+    <View
       style={{
-        flexDirection: 'row',
-        alignItems: 'center',
-        justifyContent: 'space-between',
-        borderBottomWidth: 0.3,
-        borderBottomColor: 'black',
-        height: listItemHeight,
-        paddingVertical: 14,
-        paddingHorizontal: 10,
-      }}
+        ...styles.chartBar,
+        height: `${item.hardness * 18}%`,
+      }}>
+      <Text>{item.taskName.slice(0, item.taskName.indexOf('.'))}</Text>
+    </View>
+  );
+  renderFlatList = () => (
+    <DraggableFlatList
+      onViewableItemsChanged={this.onVerticalScroll}
+      data={this.state.todoArray}
+      renderItem={this.renderFlatListItem}
+      keyExtractor={(item, index) => `draggable-item-${index}`}
+      onDragEnd={({data}) => this.onItemReorder(data)}
+      style={styles.flatList}
+      ref={this.listRef}
+    />
+  );
+  renderFlatListItem = ({item, index, drag, isActive}) => (
+    <TouchableOpacity
+      style={styles.flatListItem}
       onLongPress={drag}
       activeOpacity={1}
-      onPress={() => {
-        console.log('pressed');
-      }}>
+      onPress={() => {}}>
       <Text>{item.taskName}</Text>
       <Text>{item.hardness}</Text>
     </TouchableOpacity>
   );
 }
 
-const styles = StyleSheet.create({});
+const styles = StyleSheet.create({
+  mainContainer: {
+    flex: 1,
+  },
+  chartScrollContainer: {
+    flex: 0.3,
+  },
+  chartScrollView: {
+    backgroundColor: 'lightgray',
+    flexDirection: 'row',
+    alignItems: 'flex-end',
+  },
+  chartBar: {
+    width: verticalBarWidth,
+    marginHorizontal: verticalBarMargin,
+    backgroundColor: 'teal',
+  },
+  flatList: {
+    flex: 1,
+  },
+  flatListItem: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    borderBottomWidth: 0.3,
+    borderBottomColor: 'black',
+    height: listItemHeight,
+    paddingVertical: 14,
+    paddingHorizontal: 10,
+  },
+});
 
 export default App;
