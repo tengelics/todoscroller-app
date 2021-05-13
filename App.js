@@ -61,25 +61,25 @@ class App extends Component {
   render() {
     return (
       <SafeAreaView style={styles.mainContainer}>
-        <View style={styles.chartScrollContainer}>
-          {this.renderChartScrollView()}
-        </View>
-        {this.renderFlatList()}
+        {this.renderChart()}
+        {this.renderList()}
       </SafeAreaView>
     );
   }
 
-  renderChartScrollView = () => (
-    <ScrollView
-      contentContainerStyle={styles.chartScrollView}
-      horizontal={true}
-      showsHorizontalScrollIndicator={false}
-      ref={this.chartRef}
-      onScroll={this.onHorizontalScroll}>
-      {this.state.todoArray.map(item => {
-        return this.renderChartBar(item);
-      })}
-    </ScrollView>
+  renderChart = () => (
+    <View style={styles.chartScrollContainer}>
+      <ScrollView
+        contentContainerStyle={styles.chartScrollView}
+        horizontal={true}
+        showsHorizontalScrollIndicator={false}
+        ref={this.chartRef}
+        onScroll={this.onHorizontalScroll}>
+        {this.state.todoArray.map(item => {
+          return this.renderChartBar(item);
+        })}
+      </ScrollView>
+    </View>
   );
 
   renderChartBar = item => (
@@ -91,18 +91,18 @@ class App extends Component {
       <Text>{item.taskName.slice(0, item.taskName.indexOf('.'))}</Text>
     </View>
   );
-  renderFlatList = () => (
+  renderList = () => (
     <DraggableFlatList
       onViewableItemsChanged={this.onVerticalScroll}
       data={this.state.todoArray}
-      renderItem={this.renderFlatListItem}
+      renderItem={this.renderListItem}
       keyExtractor={(item, index) => `draggable-item-${index}`}
       onDragEnd={({data}) => this.onItemReorder(data)}
       style={styles.flatList}
       ref={this.listRef}
     />
   );
-  renderFlatListItem = ({item, index, drag, isActive}) => (
+  renderListItem = ({item, index, drag, isActive}) => (
     <TouchableOpacity
       style={styles.flatListItem}
       onLongPress={drag}
